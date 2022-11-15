@@ -6,6 +6,8 @@ class Parser:
         self.code = code
         self.file = file
         #Parse code
+        self.code = self.code.replace(r'\t', '')
+        self.code = self.code.replace('    ', '')
         self.code = self.Parse(self.code, self.file)
 
     def Parse(self, code: str, file) -> str:
@@ -50,7 +52,7 @@ class Parser:
                 if word == "include" and not self.IsInString(word, line):
                     includeName = words[wordNo + 1]
                     code = code.replace(line, "")
-                    with open(includeName.removesuffix(";") + ".p", "r") as file:
+                    with open(includeName + ".ps", "r") as file:
                         code = file.read() + "\n" + code
         for line in code.splitlines():
             if "from native reference " in line:
@@ -77,6 +79,9 @@ class Parser:
             if "this" in line and not self.IsInString("this", line):
                 code = code.replace(line, line.replace("this", "self"))
         for line in code.splitlines():
+            if "$" in line and not self.IsInString("$", line):
+                code = code.replace(line, line.replace("$", "Type.as_pointer(") + ')')
+        for line in code.splitlines():
             if "true" in line and not self.IsInString("true", line):
                 code = code.replace(line, line.replace("true", "True"))
         for line in code.splitlines():
@@ -95,7 +100,7 @@ class Parser:
 
         for line in code.splitlines():
             skipLine = False
-            for token in ("do", "while", "for", "if", "else", "elif", "with", "from"):
+            for token in ("func", "while", "for", "if", "else", "elif", "with", "from"):
                 if token in line and not self.IsInString(token, line):
                     skipLine = True
             if ''.join(line.split()).startswith(("{", "}", "\n", "class")):
@@ -220,7 +225,7 @@ class Parser:
         return code
 
     def CleanCode(self, code : str) -> str:
-        #I'm not going to lie, I made a lot of mistakes. Let's hope these hacks fix it.
+        
 
         splitLines = code.splitlines()
         for lineNo, line in enumerate(splitLines):
@@ -249,7 +254,7 @@ class Parser:
             newCode += ("    " * indentCount) + line + "\n"
         code = newCode
 
-        #Remove indent helpers
+        
         newCode = ""
         for line in code.splitlines():
             if "#endindent" in line:
@@ -261,7 +266,7 @@ class Parser:
             newCode += line + "\n"
         code = newCode
 
-        #Tidy code by removing empty lines
+        
         newCode = ""
         for line in code.splitlines():
             if line.strip("\t\r\n") == "":
@@ -275,16 +280,27 @@ class Parser:
 
         return code
 
-    def AddEntryPoint(self,file, code: str) -> str:
+    def AddEntryPoint(self, file, code: str) -> str:
         code += "\n"
         code += '''
-if __name__ == "__main__":
-    try:
-        main = Main()
-    except NameError:
-        pass
-    else:
-        main.main()
+import traceback
+import sys
+from llvmlite.ir import *
+try:
+    main = Main()
+except NameError:
+    sys.exit(0)
+
+try:
+    main.main()
+except Exception as e:
+    a = traceback.format_exc()
+    b = sys.argv[0]
+    b = b[0]
+    b = len(b)
+    a = a[(88 + b):]
+    print(a)
+    sys.exit(1)
         '''
 
         return code
