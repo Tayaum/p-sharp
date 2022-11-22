@@ -1,1 +1,1 @@
-python3 interpreter.py -r example.ps
+time python3 interpreter.py -r example.p

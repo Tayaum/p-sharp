@@ -1,19 +1,16 @@
 import os.path
+from numba import *
 import subprocess
 import sys
 import shutil
 
-#PyPy
-pyInstallerInstalled = True
 
-try:
-    import PyInstaller.__main__ as PyInstaller
-except ImportError:
-    pyInstallerInstalled = False
+
 
 #Custom
 from parse import Parser
 from error import Error
+
 
 version = "0.0.1"
 

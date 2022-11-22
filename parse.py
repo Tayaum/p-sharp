@@ -52,7 +52,7 @@ class Parser:
                 if word == "include" and not self.IsInString(word, line):
                     includeName = words[wordNo + 1]
                     code = code.replace(line, "")
-                    with open(includeName + ".ps", "r") as file:
+                    with open(includeName + ".p", "r") as file:
                         code = file.read() + "\n" + code
         for line in code.splitlines():
             if "from native reference " in line:
@@ -78,6 +78,9 @@ class Parser:
         for line in code.splitlines():
             if "this" in line and not self.IsInString("this", line):
                 code = code.replace(line, line.replace("this", "self"))
+        for line in code.splitlines():
+            if "undefined" in line and not self.IsInString("undefined", line):
+                code = code.replace(line, line.replace("undefined", "Undefined"))
         for line in code.splitlines():
             if "$" in line and not self.IsInString("$", line):
                 code = code.replace(line, line.replace("$", "Type.as_pointer(") + ')')
@@ -133,25 +136,25 @@ class Parser:
     def ParseBraces(self, code: str) -> str:
         leftBracesAmount = 0
         for line in code.splitlines():
-            if "{" in line:
+            if "then" in line:
                 lineChars = list(line)
                 stringCount = 0
                 for i in range(len(lineChars)):
                     if lineChars[i] == '"' or lineChars[i] == "'":
                         stringCount += 1
-                    if lineChars[i] == "{":
+                    if lineChars[i] == "then":
                         if stringCount % 2 == 0 and stringCount != 0:
                             leftBracesAmount += 1
                             break
         rightBracesAmount = 0
         for line in code.splitlines():
-            if "}" in line:
+            if "end" in line:
                 lineChars = list(line)
                 stringCount = 0
                 for i in range(len(lineChars)):
                     if lineChars[i] == '"' or lineChars[i] == "'":
                         stringCount += 1
-                    if lineChars[i] == "}":
+                    if lineChars[i] == "then":
                         if stringCount % 2 == 0 and stringCount != 0:
                             rightBracesAmount += 1
                             break
@@ -177,24 +180,24 @@ class Parser:
                 if not self.IsInString("class", line):
                     line = "\n"+" ".join(line.split())
             if "func" in line:
-                if line.partition("do")[0].count("\"") != 0 and line.partition("do")[0].count("\"") % 2 == 0:
+                if line.partition("func")[0].count("\"") != 0 and line.partition("func")[0].count("\"") % 2 == 0:
                     words = line.split()
                     for wordNo, word in enumerate(words):
-                        if word == "do":
-                            speechCount = line.partition("do")[2].count("\"")
-                            otherCount = line.partition("do")[2].count("'")
+                        if word == "func":
+                            speechCount = line.partition("func")[2].count("\"")
+                            otherCount = line.partition("func")[2].count("'")
                             if speechCount % 2 == 0 and otherCount % 2 == 0:
                                 words[wordNo] = "def"
                                 break
                     line = " ".join(words)
             leftBraceExpression = ''.join(line.split())
-            if not self.IsInString("{", leftBraceExpression):
-                if ''.join(line.split()).startswith(("{")):
+            if not self.IsInString("then", leftBraceExpression):
+                if ''.join(line.split()).startswith(("then")):
                     newCode += ":\n"
-            if not self.IsInString("}", line):
-                    line = line.replace("}", "#endindent")
-            if not self.IsInString("{", line):
-                line = line.replace("{", "#startindent")
+            if not self.IsInString("end", line):
+                    line = line.replace("end", "#endindent")
+            if not self.IsInString("end", line):
+                line = line.replace("then", "#startindent")
             line += "\n"
             newCode += line
             line += "\n"
@@ -286,6 +289,26 @@ class Parser:
 import traceback
 import sys
 from llvmlite.ir import *
+def str_pointer(s):
+    try:
+       return str(s)[:-1]
+    except:
+        return 'error'
+def int_pointer(i):
+    try:
+        return int(str(i)[:-1])
+    except:
+        return 'error'
+def float_pointer(f):
+    try:
+        return float(str(i)[:-1])
+    except:
+        return 'error'
+def bool_pointer(b):
+    try:
+        return bool(b[:-1])
+    except:
+        return 
 try:
     main = Main()
 except NameError:
